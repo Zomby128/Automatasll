@@ -1,0 +1,14 @@
+C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\obj\Debug\net8.0\analizadorlexico.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\obj\Debug\net8.0\analizadorlexico.AssemblyInfoInputs.cache
+C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\obj\Debug\net8.0\analizadorlexico.AssemblyInfo.cs
+C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\obj\Debug\net8.0\analizadorlexico.csproj.CoreCompileInputs.cache
+C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\bin\Debug\net8.0\analizadorlexico.exe
+C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\bin\Debug\net8.0\analizadorlexico.deps.json
+C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\bin\Debug\net8.0\analizadorlexico.runtimeconfig.json
+C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\bin\Debug\net8.0\analizadorlexico.dll
+C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\bin\Debug\net8.0\analizadorlexico.pdb
+C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\obj\Debug\net8.0\analizadorlexico.dll
+C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\obj\Debug\net8.0\refint\analizadorlexico.dll
+C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\obj\Debug\net8.0\analizadorlexico.pdb
+C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\obj\Debug\net8.0\analizadorlexico.genruntimeconfig.cache
+C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\obj\Debug\net8.0\ref\analizadorlexico.dll
