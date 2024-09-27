@@ -12,3 +12,4 @@ C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\obj\Debug\net8.0\
 C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\obj\Debug\net8.0\analizadorlexico.pdb
 C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\obj\Debug\net8.0\analizadorlexico.genruntimeconfig.cache
 C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\obj\Debug\net8.0\ref\analizadorlexico.dll
+C:\Users\alexg\OneDrive\Documentos\ProyectoC#\analizadorlexico\obj\Debug\net8.0\analizadorlexico.sourcelink.json

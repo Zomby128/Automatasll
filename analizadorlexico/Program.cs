@@ -9,12 +9,12 @@
 // La siguiente etapa sera una competencia entre todos, ademas de incorporar el analizador lexico para elaborar un arbol sintactico
 // Arreglar el codigo para que al momento de escribir algo lo identifique como una nueva variable
 // Que identifique si es un error de escritura al momento de hacer una condicion o una funcion.
-
 using System; // Importa el espacio de nombres System, que incluye funcionalidades básicas como la entrada/salida.
 using System.Collections.Generic; // Permite usar colecciones genéricas, como List y Stack, para manejar listas y pilas.
 using System.IO; // Importa el espacio de nombres para operaciones de entrada/salida de archivos.
+
 /*
-//Define los tipos de tokens que el analizador léxico reconocerá.
+Define los tipos de tokens que el analizador léxico reconocerá.
 Un token es una unidad básica de código que tiene significado, y este enum clasifica los tokens en varios tipos
 */
 public enum TokenType
@@ -25,13 +25,13 @@ public enum TokenType
     Number,      // Tipo de token para números.
     Delimiter,   // Tipo de token para delimitadores.
     Comment,     // Tipo de token para comentarios.
-    Error,        // Tipo de token para errores.
-    DataType,       // Tipos de datos como int, float, string, bool
-    Variable,        // Variables definidas por el usuario
-    Power       //Tokken para la potencia
+    Error,       // Tipo de token para errores.
+    DataType,    // Tipos de datos como int, float, string, bool
+    Variable,    // Variables definidas por el usuario
+    Power        // Token para la potencia
 }
 
-public class Token //Representa los tokens que de nuestro codigo fuente
+public class Token // Representa los tokens que de nuestro código fuente
 {
     public TokenType Type { get; } // Propiedad para el tipo de token.
     public string Value { get; } // Propiedad para el valor del token.
@@ -57,9 +57,9 @@ public class Token //Representa los tokens que de nuestro codigo fuente
             TokenType.Delimiter => "Delimitador", // Descripción para delimitadores.
             TokenType.Comment => "Comentario", // Descripción para comentarios.
             TokenType.Error => "Error", // Descripción para errores.
-            TokenType.DataType => "Tipo de Dato", // Descripcion del dato.
-            TokenType.Variable => "Variable",   //Descripcion para variables por el usuario.
-            TokenType.Power => "Potencia",
+            TokenType.DataType => "Tipo de Dato", // Descripción del dato.
+            TokenType.Variable => "Variable", // Descripción para variables por el usuario.
+            TokenType.Power => "Potencia", // Descripción para potencia
             _ => "Desconocido" // Descripción para tipos de token desconocidos.
         };
     }
@@ -72,15 +72,15 @@ public class Token //Representa los tokens que de nuestro codigo fuente
     }
 }
 
-public class Lexer //
+public class Lexer // Clase que realiza el análisis léxico
 {
     // Palabras clave reservadas para el análisis léxico.
-    private static readonly string[] keywords = { "if", "else", "while", "return", "for", "int", "float", "string",  };
+    private static readonly string[] keywords = { "if", "else", "while", "return", "for", "int", "float", "string", };
 
     // Operadores aceptados para el análisis léxico.
-    private static readonly string[] operators = { "+", "-", "*", "/", "=", "!=", "<", ">", "<", ">", "&&", "||", "++", "--" };
+    private static readonly string[] operators = { "+", "-", "*", "/", "=", "!=", "<", ">", "<=", ">=", "&&", "||", "++", "--" };
 
-    private static readonly string[] dataTypes = {"int", "float", "string", "bool"};
+    private static readonly string[] dataTypes = { "int", "float", "string", "bool" };
 
     // Delimitadores aceptados para el análisis léxico.
     private static readonly char[] delimiters = { '(', ')', '{', '}', ';', '[', ']', ',', '.' };
@@ -138,7 +138,7 @@ public class Lexer //
             {
                 int start = i; // Marca el inicio del número.
                 bool isDecimal = false; // Bandera para indicar si el número es decimal.
-                //Avanza mientras sea digito o el punto decimal.
+                // Avanza mientras sea dígito o el punto decimal.
                 while (i < code.Length && (char.IsDigit(code[i]) || (!isDecimal && code[i] == '.')))
                 {
                     if (code[i] == '.')
@@ -171,7 +171,7 @@ public class Lexer //
                 }
                 else if (Array.Exists(dataTypes, dt => dt == word))
                 {
-                    tokens.Add(new Token(TokenType.DataType, word));  // Token de tipo de dato
+                    tokens.Add(new Token(TokenType.DataType, word)); // Token de tipo de dato
                 }
                 else
                 {
@@ -181,192 +181,117 @@ public class Lexer //
             }
 
             // Manejo de operadores.
-            //Switch case para casos de dos operadores 
             switch (code[i])
             {
                 case '=':
                     if (i + 1 < code.Length && code[i + 1] == '=')
                     {
-                        tokens.Add(new Token(TokenType.Operator, "=="));  // Token de operador '=='
+                        tokens.Add(new Token(TokenType.Operator, "==")); // Token de operador '=='
                         i += 2;
                     }
                     else
                     {
-                        tokens.Add(new Token(TokenType.Operator, "="));   // Token de operador '='
+                        tokens.Add(new Token(TokenType.Operator, "=")); // Token de operador '='
                         i++;
                     }
                     break;
                 case '!':
                     if (i + 1 < code.Length && code[i + 1] == '=')
                     {
-                        tokens.Add(new Token(TokenType.Operator, "!="));  // Token de operador '!='
+                        tokens.Add(new Token(TokenType.Operator, "!=")); // Token de operador '!='
                         i += 2;
                     }
                     else
                     {
-                        tokens.Add(new Token(TokenType.Error, $"Error: Operador no válido '{code[i]}'"));  // Error si el operador no es válido
+                        tokens.Add(new Token(TokenType.Error, $"Error: Operador no válido '{code[i]}'")); // Error si el operador no es válido
                         i++;
                     }
                     break;
                 case '<':
                     if (i + 1 < code.Length && code[i + 1] == '=')
                     {
-                        tokens.Add(new Token(TokenType.Operator, "<="));  // Token de operador '<='
+                        tokens.Add(new Token(TokenType.Operator, "<=")); // Token de operador '<='
                         i += 2;
                     }
                     else
                     {
-                        tokens.Add(new Token(TokenType.Operator, "<"));   // Token de operador '<'
+                        tokens.Add(new Token(TokenType.Operator, "<")); // Token de operador '<'
                         i++;
                     }
                     break;
                 case '>':
                     if (i + 1 < code.Length && code[i + 1] == '=')
                     {
-                        tokens.Add(new Token(TokenType.Operator, ">="));  // Token de operador '>='
+                        tokens.Add(new Token(TokenType.Operator, ">=")); // Token de operador '>='
                         i += 2;
                     }
                     else
                     {
-                        tokens.Add(new Token(TokenType.Operator, ">"));   // Token de operador '>'
+                        tokens.Add(new Token(TokenType.Operator, ">")); // Token de operador '>'
                         i++;
                     }
                     break;
-                // Caso para el operador de potencia '^'
+                case '+':
+                case '-':
+                case '*':
+                case '/':
+                case '%':
+                    tokens.Add(new Token(TokenType.Operator, code[i].ToString())); // Añade el operador a la lista de tokens.
+                    i++;
+                    break;
+
+                // Manejo de la potencia
                 case '^':
-                    if (tokens.Count > 0 && (tokens[^1].Type == TokenType.Number || tokens[^1].Type == TokenType.Identifier))
-                    // El operador de potencia se ha encontrado
-                    {
-                    string baseValue = tokens.Last().Value;  // La base es el último token analizado (un número o identificador)
-                    tokens.RemoveAt(tokens.Count - 1);  // Eliminar la base de la lista para crear un token compuesto (base^exponente)
-        
-                    tokens.Add(new Token(TokenType.Operator, "^"));
-                    }
-                    else
-                    {
-                        tokens.Add(new Token(TokenType.Error, "Error: Base no válida para el operador de potencia '^'"));
-                    }
-                    i++;  // Avanzar al siguiente carácter para leer el exponente
-
-                    // Verificar si después del símbolo ^ hay un número (el exponente)
-                    if (i < code.Length && char.IsDigit(code[i]))
-                    {
-                        int start = i;
-
-                        // Leer el número del exponente
-                        while (i < code.Length && char.IsDigit(code[i]))
-                        {
-                        i++;
-                        }
-
-                        // Añadir el token del exponente
-                        string exponent = code.Substring(start, i - start);
-                        tokens.Add(new Token(TokenType.Number, exponent));  // Token del número del exponente
-                    }
-                    else
-                    {
-                        tokens.Add(new Token(TokenType.Error, "Error: Exponente esperado después de '^'"));
-            }
-        break;
-                default:
-            // Comprobar si es algún otro operador permitido
-            bool operatorFound = false; // Bandera para indicar si se encontró un operador.
-                foreach (var op in operators)
-            {
-                if (code.Substring(i).StartsWith(op))
-                {
-                    tokens.Add(new Token(TokenType.Operator, op)); // Añade el operador a la lista de tokens.
-                    i += op.Length; // Avanza el índice según la longitud del operador.
-                    operatorFound = true;
+                    tokens.Add(new Token(TokenType.Power, "^")); // Añade el operador de potencia a la lista de tokens.
+                    i++;
                     break;
-                }
-            }
 
-            // Manejo de operadores no válidos.
-            if (!operatorFound)
-            {
-                tokens.Add(new Token(TokenType.Error, $"Error: Operador no válido '{code[i]}'")); // Añade un error para operadores no válidos.
-                i++;
-            }
-            break;
-            }
+                // Manejo de delimitadores.
+                case '{':
+                case '}':
+                case '(':
+                case ')':
+                case '[':
+                case ']':
+                case ';':
+                case ',':
+                    tokens.Add(new Token(TokenType.Delimiter, code[i].ToString())); // Añade el delimitador a la lista de tokens.
+                    i++;
+                    break;
 
-            // Manejo de delimitadores.
-            if (Array.Exists(delimiters, d => d == code[i]))
-            {
-                char currentDelimiter = code[i]; // Obtiene el delimitador actual.
-
-                if (currentDelimiter == '(' || currentDelimiter == '{' || currentDelimiter == '[')
-                {
-                    delimiterStack.Push(currentDelimiter); // Añade el delimitador a la pila.
-                }
-                else if (currentDelimiter == ')' || currentDelimiter == '}' || currentDelimiter == ']')
-                {
-                    // Verifica si el delimitador tiene una pareja.
-                    if (delimiterStack.Count == 0 || !IsMatchingPair(delimiterStack.Peek(), currentDelimiter))
-                    {
-                        tokens.Add(new Token(TokenType.Error, $"Error: Delimitador sin pareja '{currentDelimiter}'")); // Añade un error para delimitadores sin pareja.
-                    }
-                    else
-                    {
-                        delimiterStack.Pop(); // Elimina el delimitador de la pila.
-                    }
-                }
-
-                tokens.Add(new Token(TokenType.Delimiter, currentDelimiter.ToString())); // Añade el delimitador a la lista de tokens.
-                i++;
-                continue;
-            }
-
-            // Manejo de caracteres no reconocidos.
-            if (!char.IsLetterOrDigit(code[i]) && code[i] != '_' && !char.IsWhiteSpace(code[i]))
-            {
-                tokens.Add(new Token(TokenType.Error, $"Error: Carácter no reconocido '{code[i]}'")); // Añade un error para caracteres no reconocidos.
-                i++;
+                // Si el carácter no se reconoce, se añade un error.
+                default:
+                    tokens.Add(new Token(TokenType.Error, $"Error: Carácter no reconocido '{code[i]}'")); // Error si el carácter no es reconocido.
+                    i++;
+                    break;
             }
         }
-
-        // Verifica si hay delimitadores sin cerrar al final del análisis.
-        while (delimiterStack.Count > 0)
-        {
-            tokens.Add(new Token(TokenType.Error, $"Error: Delimitador de apertura sin cerrar '{delimiterStack.Pop()}'")); // Añade un error para delimitadores de apertura sin cerrar.
-        }
-
-        return tokens; // Devuelve la lista de tokens analizados.
-    }
-
-    // Método para verificar si un delimitador de apertura y cierre son una pareja.
-    private bool IsMatchingPair(char open, char close)
-    {
-        return (open == '(' && close == ')') ||
-               (open == '{' && close == '}') ||
-               (open == '[' && close == ']');
+        return tokens; // Devuelve la lista de tokens generados.
     }
 }
 
-class Program
+public class Program // Clase principal que ejecuta el analizador léxico
 {
-    static void Main(string[] args)
+    public static void Main(string[] args) // Método principal
     {
-        string filePath = "codigo_fuente.txt"; // Ruta del archivo de código fuente a analizar.
-        if (!File.Exists(filePath))
+        // Intenta leer el archivo 'codigo_fuente.txt' y ejecutar el análisis léxico.
+        try
         {
-            Console.WriteLine("El archivo no existe."); // Mensaje si el archivo no existe.
-            return;
+            string code = File.ReadAllText("codigo_fuente.txt"); // Lee el contenido del archivo.
+            Lexer lexer = new Lexer(); // Crea una instancia del analizador léxico.
+            List<Token> tokens = lexer.Analyze(code); // Analiza el código fuente y obtiene los tokens.
+
+            // Muestra los resultados en una tabla.
+            Console.WriteLine($"{"Valor",-15} {"Descripción",-20} {"Tipo",-15} {"Palabra clave",-10}");
+            Console.WriteLine(new string('-', 70)); // Línea de separación.
+            foreach (Token token in tokens) // Recorre cada token y muestra su información.
+            {
+                Console.WriteLine(token);
+            }
         }
-
-        string code = File.ReadAllText(filePath); // Lee el contenido del archivo de código fuente.
-        Lexer lexer = new Lexer(); // Crea una instancia del analizador léxico.
-        List<Token> tokens = lexer.Analyze(code); // Analiza el código fuente y obtiene los tokens.
-
-        // Imprime la tabla con los encabezados.
-        Console.WriteLine($"{"Token",-15} {"Descripción",-20} {"Tipo",-15} {"Palabra Res.",-10}");
-        Console.WriteLine(new string('-', 60));
-
-        // Imprime cada token con el formato solicitado.
-        foreach (var token in tokens)
+        catch (Exception ex) // Captura errores en la lectura del archivo o el análisis.
         {
-            Console.WriteLine(token);
+            Console.WriteLine($"Error: {ex.Message}"); // Muestra el mensaje de error.
         }
     }
 }
