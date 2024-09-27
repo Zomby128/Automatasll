@@ -25,7 +25,10 @@ public enum TokenType
     Number,      // Tipo de token para números.
     Delimiter,   // Tipo de token para delimitadores.
     Comment,     // Tipo de token para comentarios.
-    Error        // Tipo de token para errores.
+    Error,        // Tipo de token para errores.
+    DataType,       // Tipos de datos como int, float, string, bool
+    Variable,        // Variables definidas por el usuario
+    Power       //Tokken para la potencia
 }
 
 public class Token //Representa los tokens que de nuestro codigo fuente
@@ -54,6 +57,9 @@ public class Token //Representa los tokens que de nuestro codigo fuente
             TokenType.Delimiter => "Delimitador", // Descripción para delimitadores.
             TokenType.Comment => "Comentario", // Descripción para comentarios.
             TokenType.Error => "Error", // Descripción para errores.
+            TokenType.DataType => "Tipo de Dato", // Descripcion del dato.
+            TokenType.Variable => "Variable",   //Descripcion para variables por el usuario.
+            TokenType.Power => "Potencia",
             _ => "Desconocido" // Descripción para tipos de token desconocidos.
         };
     }
@@ -69,10 +75,12 @@ public class Token //Representa los tokens que de nuestro codigo fuente
 public class Lexer //
 {
     // Palabras clave reservadas para el análisis léxico.
-    private static readonly string[] keywords = { "if", "else", "while", "return", "for" };
+    private static readonly string[] keywords = { "if", "else", "while", "return", "for", "int", "float", "string",  };
 
     // Operadores aceptados para el análisis léxico.
     private static readonly string[] operators = { "+", "-", "*", "/", "=", "!=", "<", ">", "<", ">", "&&", "||", "++", "--" };
+
+    private static readonly string[] dataTypes = {"int", "float", "string", "bool"};
 
     // Delimitadores aceptados para el análisis léxico.
     private static readonly char[] delimiters = { '(', ')', '{', '}', ';', '[', ']', ',', '.' };
@@ -130,7 +138,7 @@ public class Lexer //
             {
                 int start = i; // Marca el inicio del número.
                 bool isDecimal = false; // Bandera para indicar si el número es decimal.
-
+                //Avanza mientras sea digito o el punto decimal.
                 while (i < code.Length && (char.IsDigit(code[i]) || (!isDecimal && code[i] == '.')))
                 {
                     if (code[i] == '.')
@@ -161,6 +169,10 @@ public class Lexer //
                 {
                     tokens.Add(new Token(TokenType.Keyword, word, true)); // Añade una palabra clave a la lista de tokens.
                 }
+                else if (Array.Exists(dataTypes, dt => dt == word))
+                {
+                    tokens.Add(new Token(TokenType.DataType, word));  // Token de tipo de dato
+                }
                 else
                 {
                     tokens.Add(new Token(TokenType.Identifier, word)); // Añade un identificador a la lista de tokens.
@@ -169,8 +181,97 @@ public class Lexer //
             }
 
             // Manejo de operadores.
+            //Switch case para casos de dos operadores 
+            switch (code[i])
+            {
+                case '=':
+                    if (i + 1 < code.Length && code[i + 1] == '=')
+                    {
+                        tokens.Add(new Token(TokenType.Operator, "=="));  // Token de operador '=='
+                        i += 2;
+                    }
+                    else
+                    {
+                        tokens.Add(new Token(TokenType.Operator, "="));   // Token de operador '='
+                        i++;
+                    }
+                    break;
+                case '!':
+                    if (i + 1 < code.Length && code[i + 1] == '=')
+                    {
+                        tokens.Add(new Token(TokenType.Operator, "!="));  // Token de operador '!='
+                        i += 2;
+                    }
+                    else
+                    {
+                        tokens.Add(new Token(TokenType.Error, $"Error: Operador no válido '{code[i]}'"));  // Error si el operador no es válido
+                        i++;
+                    }
+                    break;
+                case '<':
+                    if (i + 1 < code.Length && code[i + 1] == '=')
+                    {
+                        tokens.Add(new Token(TokenType.Operator, "<="));  // Token de operador '<='
+                        i += 2;
+                    }
+                    else
+                    {
+                        tokens.Add(new Token(TokenType.Operator, "<"));   // Token de operador '<'
+                        i++;
+                    }
+                    break;
+                case '>':
+                    if (i + 1 < code.Length && code[i + 1] == '=')
+                    {
+                        tokens.Add(new Token(TokenType.Operator, ">="));  // Token de operador '>='
+                        i += 2;
+                    }
+                    else
+                    {
+                        tokens.Add(new Token(TokenType.Operator, ">"));   // Token de operador '>'
+                        i++;
+                    }
+                    break;
+                // Caso para el operador de potencia '^'
+                case '^':
+                    if (tokens.Count > 0 && (tokens[^1].Type == TokenType.Number || tokens[^1].Type == TokenType.Identifier))
+                    // El operador de potencia se ha encontrado
+                    {
+                    string baseValue = tokens.Last().Value;  // La base es el último token analizado (un número o identificador)
+                    tokens.RemoveAt(tokens.Count - 1);  // Eliminar la base de la lista para crear un token compuesto (base^exponente)
+        
+                    tokens.Add(new Token(TokenType.Operator, "^"));
+                    }
+                    else
+                    {
+                        tokens.Add(new Token(TokenType.Error, "Error: Base no válida para el operador de potencia '^'"));
+                    }
+                    i++;  // Avanzar al siguiente carácter para leer el exponente
+
+                    // Verificar si después del símbolo ^ hay un número (el exponente)
+                    if (i < code.Length && char.IsDigit(code[i]))
+                    {
+                        int start = i;
+
+                        // Leer el número del exponente
+                        while (i < code.Length && char.IsDigit(code[i]))
+                        {
+                        i++;
+                        }
+
+                        // Añadir el token del exponente
+                        string exponent = code.Substring(start, i - start);
+                        tokens.Add(new Token(TokenType.Number, exponent));  // Token del número del exponente
+                    }
+                    else
+                    {
+                        tokens.Add(new Token(TokenType.Error, "Error: Exponente esperado después de '^'"));
+            }
+        break;
+                default:
+            // Comprobar si es algún otro operador permitido
             bool operatorFound = false; // Bandera para indicar si se encontró un operador.
-            foreach (var op in operators)
+                foreach (var op in operators)
             {
                 if (code.Substring(i).StartsWith(op))
                 {
@@ -182,11 +283,12 @@ public class Lexer //
             }
 
             // Manejo de operadores no válidos.
-            if (!operatorFound && (code[i] == '=' || code[i] == '!' || code[i] == '<' || code[i] == '>'))
+            if (!operatorFound)
             {
                 tokens.Add(new Token(TokenType.Error, $"Error: Operador no válido '{code[i]}'")); // Añade un error para operadores no válidos.
                 i++;
-                continue;
+            }
+            break;
             }
 
             // Manejo de delimitadores.
