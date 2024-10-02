@@ -1,8 +1,1 @@
-if (b>a){
-int a = 5;
-int b = 10;
-bool result = (a < b) && (b > 5);
-result = result || (a == 5);
-z = 3^9;
-}
-hola;
+2+5-5*3
