@@ -228,14 +228,14 @@ public class Lexer // Clase que realiza el análisis léxico
 
 class Program
 {
-    public static void ImprimirArbol(NodoExpresion nodo, int nivel = 0)
+public static void ImprimirArbol(NodoExpresion nodo, int nivel = 0)
 {
     if (nodo != null)
     {
         // Imprime el hijo derecho (parte superior del árbol).
         ImprimirArbol(nodo.Derecha, nivel + 1);
         // Imprime el nodo actual con la indentación apropiada.
-        Console.WriteLine(new string(' ', 4 * nivel) + nodo.Valor);
+        Console.WriteLine(new string(' ', nivel * 4) + nodo.Valor);
         // Imprime el hijo izquierdo (parte inferior del árbol).
         ImprimirArbol(nodo.Izquierda, nivel + 1);
     }

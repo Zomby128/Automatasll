@@ -1,16 +1,31 @@
-// Clase que representa un nodo en el árbol de expresión
 public class NodoExpresion
 {
-    public string Valor { get; set; } // Valor del nodo (puede ser un operador o un número).
-    public NodoExpresion? Izquierda { get; set; } // Hijo izquierdo del nodo (puede ser otro nodo).
-    public NodoExpresion? Derecha { get; set; } // Hijo derecho del nodo (puede ser otro nodo).
+    public string Valor { get; set; } // Valor del nodo, puede ser un operador o una variable.
+    public NodoExpresion Izquierda { get; set; } // Hijo izquierdo del nodo.
+    public NodoExpresion Derecha { get; set; } // Hijo derecho del nodo.
 
-    // Constructor para inicializar un nodo con un valor específico.
+    // Constructor de la clase.
     public NodoExpresion(string valor)
     {
-        Valor = valor; // Inicializa el valor del nodo con el valor proporcionado.
-        Izquierda = null; // Inicializa el hijo izquierdo como nulo.
-        Derecha = null; // Inicializa el hijo derecho como nulo.
+        Valor = valor; // Inicializa el valor del nodo.
+        Izquierda = null; // Inicializa el hijo izquierdo en null.
+        Derecha = null; // Inicializa el hijo derecho en null.
+    }
+
+    // Método para imprimir el árbol sintáctico de forma visual.
+    public void Imprimir(int nivel = 0)
+    {
+        if (Derecha != null) // Imprime el subárbol derecho.
+        {
+            Derecha.Imprimir(nivel + 1);
+        }
+
+        Console.WriteLine(new string(' ', nivel * 4) + Valor); // Imprime el valor del nodo con indentación.
+
+        if (Izquierda != null) // Imprime el subárbol izquierdo.
+        {
+            Izquierda.Imprimir(nivel + 1);
+        }
     }
 }
 
@@ -30,8 +45,7 @@ public class AnalizadorSintactico
     // Método para obtener el token actual en la posición actual.
     private string ObtenerTokenActual()
     {
-        // Retorna el token actual si está dentro de los límites del arreglo, de lo contrario retorna una cadena vacía.
-        return posicion < tokens.Length ? tokens[posicion] : "";
+        return posicion < tokens.Length ? tokens[posicion] : ""; // Retorna el token actual o cadena vacía si está fuera de límites.
     }
 
     // Método para avanzar a la siguiente posición en el arreglo de tokens.
@@ -43,25 +57,100 @@ public class AnalizadorSintactico
     // Método principal para iniciar el análisis y devolver la raíz del árbol de expresión.
     public NodoExpresion Parsear()
     {
-        return ParsearExpresion(); // Inicia el análisis llamando al método ParsearExpresion.
+        return ParsearSentencia(); // Inicia el análisis llamando al método ParsearSentencia.
     }
 
-    // Método para analizar una expresión que puede contener sumas y restas.
+    // Método para analizar una sentencia
+    private NodoExpresion ParsearSentencia()
+    {
+        string tokenActual = ObtenerTokenActual();
+        if (tokenActual == "if")
+        {
+            Avanzar(); // Consumir 'if'
+            var condicion = ParsearExpresion(); // Analizar la expresión de la condición
+            if (ObtenerTokenActual() != "{")
+            {
+                throw new Exception("Se esperaba '{' después de la condición 'if'");
+            }
+            Avanzar(); // Consumir '{'
+            var cuerpo = ParsearCuerpo(); // Analizar el cuerpo del if
+            if (ObtenerTokenActual() != "}")
+            {
+                throw new Exception("Se esperaba '}' después del cuerpo 'if'");
+            }
+            Avanzar(); // Consumir '}'
+
+            NodoExpresion ifNodo = new NodoExpresion("if")
+            {
+                Izquierda = condicion, // Asignar condición al hijo izquierdo
+                Derecha = cuerpo // Asignar cuerpo al hijo derecho
+            };
+
+            return ifNodo; // Retornar nodo 'if' con su cuerpo.
+        }
+        else
+        {
+            return ParsearExpresion(); // Si no es una sentencia if, se analiza como una expresión.
+        }
+    }
+
+    // Método para analizar un cuerpo que puede contener múltiples expresiones
+    private NodoExpresion ParsearCuerpo()
+    {
+        NodoExpresion nodoCuerpo = new NodoExpresion("expresion");
+        while (true)
+        {
+            string tokenActual = ObtenerTokenActual();
+            if (tokenActual == "}")
+            {
+                break; // Salir si se llega al final del cuerpo
+            }
+            else
+            {
+                // Analiza cada sentencia en el cuerpo
+                NodoExpresion sentencia = ParsearAsignacion(); // Cambiar para parsear asignaciones
+                nodoCuerpo.Derecha = sentencia; // Asignar la sentencia al nodo cuerpo
+            }
+        }
+        return nodoCuerpo; // Retornar nodo del cuerpo
+    }
+
+    // Método para analizar una asignación
+    private NodoExpresion ParsearAsignacion()
+    {
+        string variable = ObtenerTokenActual(); // Obtiene la variable
+        if (variable == null || variable.Contains("=") || variable == "{" || variable == "}") // Verifica si el token actual es una asignación
+        {
+            throw new Exception("Se esperaba una variable");
+        }
+        Avanzar(); // Consume la variable
+
+        if (ObtenerTokenActual() != "=") // Verifica que el siguiente token sea '='
+        {
+            throw new Exception("Se esperaba '=' en la asignación");
+        }
+        Avanzar(); // Consume '='
+
+        var valor = ParsearExpresion(); // Analiza el valor a la derecha de la asignación
+        return new NodoExpresion("=")
+        {
+            Izquierda = new NodoExpresion(variable), // Nodo izquierdo para la variable
+            Derecha = valor // Nodo derecho para el valor
+        };
+    }
+
+    // Método para analizar una expresión que puede contener comparaciones
     private NodoExpresion ParsearExpresion()
     {
-        // Analiza el primer término de la expresión.
-        NodoExpresion izquierda = ParsearTermino();
+        NodoExpresion izquierda = ParsearTermino(); // Analiza el primer término de la expresión
         
-        // Bucle para continuar analizando mientras haya operaciones de suma o resta.
         while (true)
         {
             string tokenActual = ObtenerTokenActual(); // Obtiene el token actual.
-            if (tokenActual == "+" || tokenActual == "-") // Verifica si el token es un operador de suma o resta.
+            if (tokenActual == ">" || tokenActual == "<" || tokenActual == "==" || tokenActual == "!=") // Verifica si el token es un operador de comparación.
             {
                 Avanzar(); // Avanza para consumir el operador.
-                // Analiza el siguiente término a la derecha del operador.
-                NodoExpresion derecha = ParsearTermino();
-                // Crea un nuevo nodo que representa la operación con el operador y los dos operandos.
+                NodoExpresion derecha = ParsearTermino(); // Analiza el siguiente término a la derecha del operador.
                 NodoExpresion nuevoNodo = new NodoExpresion(tokenActual)
                 {
                     Izquierda = izquierda, // Asigna el nodo izquierdo.
@@ -71,7 +160,7 @@ public class AnalizadorSintactico
             }
             else
             {
-                break; // Si no hay más operadores de suma o resta, se rompe el bucle.
+                break; // Si no hay más operadores, se rompe el bucle.
             }
         }
         return izquierda; // Devuelve el nodo raíz de la expresión analizada.
@@ -80,19 +169,15 @@ public class AnalizadorSintactico
     // Método para analizar un término que puede contener multiplicaciones y divisiones.
     private NodoExpresion ParsearTermino()
     {
-        // Analiza el primer factor del término.
-        NodoExpresion izquierda = ParsearFactor();
+        NodoExpresion izquierda = ParsearFactor(); // Analiza el primer factor del término
         
-        // Bucle para continuar analizando mientras haya operaciones de multiplicación o división.
         while (true)
         {
             string tokenActual = ObtenerTokenActual(); // Obtiene el token actual.
             if (tokenActual == "*" || tokenActual == "/") // Verifica si el token es un operador de multiplicación o división.
             {
                 Avanzar(); // Avanza para consumir el operador.
-                // Analiza el siguiente factor a la derecha del operador.
-                NodoExpresion derecha = ParsearFactor();
-                // Crea un nuevo nodo que representa la operación con el operador y los dos operandos.
+                NodoExpresion derecha = ParsearFactor(); // Analiza el siguiente factor a la derecha del operador.
                 NodoExpresion nuevoNodo = new NodoExpresion(tokenActual)
                 {
                     Izquierda = izquierda, // Asigna el nodo izquierdo.
@@ -102,7 +187,7 @@ public class AnalizadorSintactico
             }
             else
             {
-                break; // Si no hay más operadores de multiplicación o división, se rompe el bucle.
+                break; // Si no hay más operadores, se rompe el bucle.
             }
         }
         return izquierda; // Devuelve el nodo raíz del término analizado.
@@ -115,8 +200,7 @@ public class AnalizadorSintactico
         if (tokenActual == "(") // Verifica si el token es un paréntesis de apertura.
         {
             Avanzar(); // Consume el '('.
-            // Llama recursivamente a ParsearExpresion para analizar la expresión dentro de los paréntesis.
-            NodoExpresion nodo = ParsearExpresion();
+            NodoExpresion nodo = ParsearExpresion(); // Llama recursivamente a ParsearExpresion para analizar la expresión dentro de los paréntesis.
             Avanzar(); // Consume el ')'.
             return nodo; // Devuelve el nodo analizado dentro de los paréntesis.
         }
