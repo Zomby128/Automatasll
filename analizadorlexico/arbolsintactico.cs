@@ -61,7 +61,7 @@ public class AnalizadorSintactico
     }
 
     // Método para analizar una sentencia
-    private NodoExpresion ParsearSentencia()
+    /*private NodoExpresion ParsearSentencia()
     {
         string tokenActual = ObtenerTokenActual();
         if (tokenActual == "if")
@@ -92,12 +92,90 @@ public class AnalizadorSintactico
         {
             return ParsearExpresion(); // Si no es una sentencia if, se analiza como una expresión.
         }
+    }*/
+    private NodoExpresion ParsearSentencia()
+{
+    string tokenActual = ObtenerTokenActual();
+    
+    if (tokenActual == "if")
+    {
+        Avanzar(); // Consumir 'if'
+        var condicion = ParsearExpresion(); // Analizar la expresión de la condición
+        if (ObtenerTokenActual() != "{")
+        {
+            throw new Exception("Se esperaba '{' después de la condición 'if'");
+        }
+        Avanzar(); // Consumir '{'
+        var cuerpo = ParsearCuerpo(); // Analizar el cuerpo del if
+        if (ObtenerTokenActual() != "}")
+        {
+            throw new Exception("Se esperaba '}' después del cuerpo 'if'");
+        }
+        Avanzar(); // Consumir '}'
+
+        NodoExpresion ifNodo = new NodoExpresion("if")
+        {
+            Izquierda = condicion, // Asignar condición al hijo izquierdo
+            Derecha = cuerpo // Asignar cuerpo al hijo derecho
+        };
+
+        // Comprobar si hay un else
+        if (ObtenerTokenActual() == "else")
+        {
+            Avanzar(); // Consumir 'else'
+            if (ObtenerTokenActual() != "{")
+            {
+                throw new Exception("Se esperaba '{' después de 'else'");
+            }
+            Avanzar(); // Consumir '{'
+            var cuerpoElse = ParsearCuerpo(); // Analizar el cuerpo del else
+            if (ObtenerTokenActual() != "}")
+            {
+                throw new Exception("Se esperaba '}' después del cuerpo 'else'");
+            }
+            Avanzar(); // Consumir '}'
+
+            NodoExpresion elseNodo = new NodoExpresion("else") { Derecha = cuerpoElse };
+            ifNodo.Derecha = elseNodo; // Asignar el nodo else al nodo if
+        }
+
+        return ifNodo; // Retornar nodo 'if' con su cuerpo.
     }
+    else if (tokenActual == "while") // Añadir soporte para while
+    {
+        Avanzar(); // Consumir 'while'
+        var condicion = ParsearExpresion(); // Analizar la expresión de la condición
+        if (ObtenerTokenActual() != "{")
+        {
+            throw new Exception("Se esperaba '{' después de la condición 'while'");
+        }
+        Avanzar(); // Consumir '{'
+        var cuerpo = ParsearCuerpo(); // Analizar el cuerpo del while
+        if (ObtenerTokenActual() != "}")
+        {
+            throw new Exception("Se esperaba '}' después del cuerpo 'while'");
+        }
+        Avanzar(); // Consumir '}'
+
+        NodoExpresion whileNodo = new NodoExpresion("while")
+        {
+            Izquierda = condicion, // Asignar condición al hijo izquierdo
+            Derecha = cuerpo // Asignar cuerpo al hijo derecho
+        };
+
+        return whileNodo; // Retornar nodo 'while' con su cuerpo.
+    }
+    else
+    {
+        return ParsearExpresion(); // Si no es una sentencia if ni while, se analiza como una expresión.
+    }
+}
+
 
     // Método para analizar un cuerpo que puede contener múltiples expresiones
     private NodoExpresion ParsearCuerpo()
     {
-        NodoExpresion nodoCuerpo = new NodoExpresion("expresion");
+        NodoExpresion nodoCuerpo = new NodoExpresion("cuerpo");
         while (true)
         {
             string tokenActual = ObtenerTokenActual();
@@ -132,7 +210,7 @@ public class AnalizadorSintactico
         Avanzar(); // Consume '='
 
         var valor = ParsearExpresion(); // Analiza el valor a la derecha de la asignación
-        return new NodoExpresion("=")
+        return new NodoExpresion("asignado")
         {
             Izquierda = new NodoExpresion(variable), // Nodo izquierdo para la variable
             Derecha = valor // Nodo derecho para el valor
@@ -147,7 +225,7 @@ public class AnalizadorSintactico
         while (true)
         {
             string tokenActual = ObtenerTokenActual(); // Obtiene el token actual.
-            if (tokenActual == ">" || tokenActual == "<" || tokenActual == "==" || tokenActual == "!=") // Verifica si el token es un operador de comparación.
+            if (tokenActual == "-" || tokenActual == "+" || tokenActual == ">" || tokenActual == "<" || tokenActual == "==" || tokenActual == "!=") // Verifica si el token es un operador de comparación.
             {
                 Avanzar(); // Avanza para consumir el operador.
                 NodoExpresion derecha = ParsearTermino(); // Analiza el siguiente término a la derecha del operador.
