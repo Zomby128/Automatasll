@@ -109,38 +109,46 @@ public class Lexer
     }
 
     private Token GenerarTokenSimbolo()
+{
+    char simboloActual = codigoFuente[posicion];
+
+    // Manejar operadores de incremento (++) y decremento (--)
+    if (posicion + 1 < codigoFuente.Length)
     {
-        char simboloActual = codigoFuente[posicion];
-        posicion++; // Avanzar para consumir el símbolo
+        string dosCaracteres = codigoFuente.Substring(posicion, 2);
 
-        switch (simboloActual)
+        if (dosCaracteres == "++" || dosCaracteres == "--")
         {
-            case '+':
-            case '-':
-            case '*':
-            case '/':
-            case '=':
-            case '<':
-            case '>':
-                return new Token(TokenType.Operator, simboloActual.ToString());
-
-            case '(':
-                return new Token(TokenType.ParenOpen, "(");
-
-            case ')':
-                return new Token(TokenType.ParenClose, ")");
-
-            case '{':
-                return new Token(TokenType.BraceOpen, "{");
-
-            case '}':
-                return new Token(TokenType.BraceClose, "}");
-
-            case ';':
-                return new Token(TokenType.Semicolon, ";");
-
-            default:
-                throw new Exception($"Símbolo inesperado: {simboloActual}");
+            posicion += 2; // Avanzar dos caracteres
+            return new Token(TokenType.Operator, dosCaracteres); // Token para '++' o '--'
         }
     }
+
+    posicion++; // Avanzar para consumir el símbolo actual
+
+    switch (simboloActual)
+    {
+        case '+':
+        case '-':
+        case '*':
+        case '/':
+        case '=':
+        case '<':
+        case '>':
+            return new Token(TokenType.Operator, simboloActual.ToString());
+        case '(':
+            return new Token(TokenType.ParenOpen, "(");
+        case ')':
+            return new Token(TokenType.ParenClose, ")");
+        case '{':
+            return new Token(TokenType.BraceOpen, "{");
+        case '}':
+            return new Token(TokenType.BraceClose, "}");
+        case ';':
+            return new Token(TokenType.Semicolon, ";");
+        default:
+            throw new Exception($"Símbolo inesperado: {simboloActual}");
+    }
+}
+
 }
