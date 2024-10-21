@@ -1,291 +1,257 @@
-public class NodoExpresion
-{
-    public string Valor { get; set; } // Valor del nodo, puede ser un operador o una variable.
-    public NodoExpresion Izquierda { get; set; } // Hijo izquierdo del nodo.
-    public NodoExpresion Derecha { get; set; } // Hijo derecho del nodo.
+using System;
+using System.Collections.Generic;
 
-    // Constructor de la clase.
-    public NodoExpresion(string valor)
+public class Parser
+{
+    private List<Token> tokens;
+    private int posicion;
+
+    public Parser(List<Token> tokens)
     {
-        Valor = valor; // Inicializa el valor del nodo.
-        Izquierda = null; // Inicializa el hijo izquierdo en null.
-        Derecha = null; // Inicializa el hijo derecho en null.
+        this.tokens = tokens;
+        this.posicion = 0;
     }
 
-    // Método para imprimir el árbol sintáctico de forma visual.
-    public void Imprimir(int nivel = 0)
+    private int Precedencia(string operador)
     {
-        if (Derecha != null) // Imprime el subárbol derecho.
+        switch (operador)
         {
-            Derecha.Imprimir(nivel + 1);
-        }
-
-        Console.WriteLine(new string(' ', nivel * 4) + Valor); // Imprime el valor del nodo con indentación.
-
-        if (Izquierda != null) // Imprime el subárbol izquierdo.
-        {
-            Izquierda.Imprimir(nivel + 1);
+            case "^": return 4;
+            case "*": case "/": case "%": return 3;
+            case "+": case "-": return 2;
+            case "<": case ">": case "<=": case ">=": case "==": case "!=": return 1;
+            default: return 0;
         }
     }
-}
 
-// Clase que implementa un analizador sintáctico para construir un árbol de expresiones
-public class AnalizadorSintactico
-{
-    private string[] tokens; // Arreglo donde se guardarán los tokens de la expresión.
-    private int posicion; // Posición actual en el arreglo de tokens.
-
-    // Constructor que inicializa el analizador con los tokens proporcionados.
-    public AnalizadorSintactico(string[] tokens)
+    private bool EsOperador(string valor)
     {
-        this.tokens = tokens; // Asigna los tokens a la variable de instancia.
-        posicion = 0; // Inicializa la posición en 0.
+        return Precedencia(valor) > 0;
     }
 
-    // Método para obtener el token actual en la posición actual.
-    private string ObtenerTokenActual()
+    private Token SiguienteToken()
     {
-        return posicion < tokens.Length ? tokens[posicion] : ""; // Retorna el token actual o cadena vacía si está fuera de límites.
-    }
-
-    // Método para avanzar a la siguiente posición en el arreglo de tokens.
-    private void Avanzar()
-    {
-        posicion++; // Incrementa la posición para avanzar al siguiente token.
-    }
-
-    // Método principal para iniciar el análisis y devolver la raíz del árbol de expresión.
-    public NodoExpresion Parsear()
-    {
-        return ParsearSentencia(); // Inicia el análisis llamando al método ParsearSentencia.
-    }
-
-    // Método para analizar una sentencia
-    /*private NodoExpresion ParsearSentencia()
-    {
-        string tokenActual = ObtenerTokenActual();
-        if (tokenActual == "if")
+        if (posicion < tokens.Count)
         {
-            Avanzar(); // Consumir 'if'
-            var condicion = ParsearExpresion(); // Analizar la expresión de la condición
-            if (ObtenerTokenActual() != "{")
-            {
-                throw new Exception("Se esperaba '{' después de la condición 'if'");
-            }
-            Avanzar(); // Consumir '{'
-            var cuerpo = ParsearCuerpo(); // Analizar el cuerpo del if
-            if (ObtenerTokenActual() != "}")
-            {
-                throw new Exception("Se esperaba '}' después del cuerpo 'if'");
-            }
-            Avanzar(); // Consumir '}'
+            return tokens[posicion++];
+        }
+        return null;
+    }
 
-            NodoExpresion ifNodo = new NodoExpresion("if")
+    private void Retroceder()
+    {
+        if (posicion > 0)
+            posicion--;
+    }
+
+    public NodoExpresion ParsearSentencia()
+    {
+        Token tokenActual = SiguienteToken();
+
+        // Sentencia 'return'
+        if (tokenActual.Type == TokenType.Keyword && tokenActual.Value == "return")
+        {
+            return ParsearReturnStatement();
+        }
+
+        // Sentencia 'if'
+        if (tokenActual.Type == TokenType.Keyword && tokenActual.Value == "if")
+        {
+            return ParsearIfStatement();
+        }
+
+        // Sentencia 'while'
+        if (tokenActual.Type == TokenType.Keyword && tokenActual.Value == "while")
+        {
+            return ParsearWhileStatement();
+        }
+
+        // Sentencia 'for'
+        if (tokenActual.Type == TokenType.Keyword && tokenActual.Value == "for")
+        {
+            return ParsearForStatement();
+        }
+
+        // Asignación
+        if (tokenActual.Type == TokenType.Identifier)
+        {
+            return ParsearAsignacion(tokenActual);
+        }
+
+        throw new Exception($"Error: Sentencia inesperada '{tokenActual.Value}'");
+    }
+
+    // Método para procesar una sentencia 'return'
+    private NodoExpresion ParsearReturnStatement()
+    {
+        NodoExpresion expresion = ParsearExpresion();
+        VerificarTokenEsperado(";"); // Cada 'return' debe terminar con un ';'
+        return new NodoExpresion("return")
+        {
+            Derecha = expresion
+        };
+    }
+
+    private NodoExpresion ParsearIfStatement()
+    {
+        VerificarTokenEsperado("(");
+        NodoExpresion condicion = ParsearExpresion();
+        VerificarTokenEsperado(")");
+
+        VerificarTokenEsperado("{");
+
+        NodoExpresion bloqueIf = new NodoExpresion("if")
+        {
+            Izquierda = condicion,
+            Derecha = ParsearBloque()
+        };
+
+        Token tokenSiguiente = SiguienteToken();
+        if (tokenSiguiente != null && tokenSiguiente.Value == "else")
+        {
+            VerificarTokenEsperado("{");
+            NodoExpresion bloqueElse = new NodoExpresion("else")
             {
-                Izquierda = condicion, // Asignar condición al hijo izquierdo
-                Derecha = cuerpo // Asignar cuerpo al hijo derecho
+                Derecha = ParsearBloque()
             };
-
-            return ifNodo; // Retornar nodo 'if' con su cuerpo.
+            bloqueIf.Sentencias.Add(bloqueElse);
         }
         else
         {
-            return ParsearExpresion(); // Si no es una sentencia if, se analiza como una expresión.
+            Retroceder();
         }
-    }*/
-    private NodoExpresion ParsearSentencia()
-{
-    string tokenActual = ObtenerTokenActual();
-    
-    if (tokenActual == "if")
-    {
-        Avanzar(); // Consumir 'if'
-        var condicion = ParsearExpresion(); // Analizar la expresión de la condición
-        if (ObtenerTokenActual() != "{")
-        {
-            throw new Exception("Se esperaba '{' después de la condición 'if'");
-        }
-        Avanzar(); // Consumir '{'
-        var cuerpo = ParsearCuerpo(); // Analizar el cuerpo del if
-        if (ObtenerTokenActual() != "}")
-        {
-            throw new Exception("Se esperaba '}' después del cuerpo 'if'");
-        }
-        Avanzar(); // Consumir '}'
 
-        NodoExpresion ifNodo = new NodoExpresion("if")
+        return bloqueIf;
+    }
+
+    private NodoExpresion ParsearWhileStatement()
+    {
+        VerificarTokenEsperado("(");
+        NodoExpresion condicion = ParsearExpresion();
+        VerificarTokenEsperado(")");
+        VerificarTokenEsperado("{");
+
+        NodoExpresion bloqueWhile = new NodoExpresion("while")
         {
-            Izquierda = condicion, // Asignar condición al hijo izquierdo
-            Derecha = cuerpo // Asignar cuerpo al hijo derecho
+            Izquierda = condicion,
+            Derecha = ParsearBloque()
         };
 
-        // Comprobar si hay un else
-        if (ObtenerTokenActual() == "else")
-        {
-            Avanzar(); // Consumir 'else'
-            if (ObtenerTokenActual() != "{")
-            {
-                throw new Exception("Se esperaba '{' después de 'else'");
-            }
-            Avanzar(); // Consumir '{'
-            var cuerpoElse = ParsearCuerpo(); // Analizar el cuerpo del else
-            if (ObtenerTokenActual() != "}")
-            {
-                throw new Exception("Se esperaba '}' después del cuerpo 'else'");
-            }
-            Avanzar(); // Consumir '}'
-
-            NodoExpresion elseNodo = new NodoExpresion("else") { Derecha = cuerpoElse };
-            ifNodo.Derecha = elseNodo; // Asignar el nodo else al nodo if
-        }
-
-        return ifNodo; // Retornar nodo 'if' con su cuerpo.
+        return bloqueWhile;
     }
-    else if (tokenActual == "while") // Añadir soporte para while
-    {
-        Avanzar(); // Consumir 'while'
-        var condicion = ParsearExpresion(); // Analizar la expresión de la condición
-        if (ObtenerTokenActual() != "{")
-        {
-            throw new Exception("Se esperaba '{' después de la condición 'while'");
-        }
-        Avanzar(); // Consumir '{'
-        var cuerpo = ParsearCuerpo(); // Analizar el cuerpo del while
-        if (ObtenerTokenActual() != "}")
-        {
-            throw new Exception("Se esperaba '}' después del cuerpo 'while'");
-        }
-        Avanzar(); // Consumir '}'
 
-        NodoExpresion whileNodo = new NodoExpresion("while")
+    private NodoExpresion ParsearForStatement()
+    {
+        VerificarTokenEsperado("(");
+        NodoExpresion inicializacion = ParsearExpresion();
+        VerificarTokenEsperado(";");
+        NodoExpresion condicion = ParsearExpresion();
+        VerificarTokenEsperado(";");
+        NodoExpresion incremento = ParsearExpresion();
+        VerificarTokenEsperado(")");
+        VerificarTokenEsperado("{");
+
+        NodoExpresion bloqueFor = new NodoExpresion("for")
         {
-            Izquierda = condicion, // Asignar condición al hijo izquierdo
-            Derecha = cuerpo // Asignar cuerpo al hijo derecho
+            Izquierda = condicion,
+            Derecha = ParsearBloque()
         };
 
-        return whileNodo; // Retornar nodo 'while' con su cuerpo.
+        return bloqueFor;
     }
-    else
-    {
-        return ParsearExpresion(); // Si no es una sentencia if ni while, se analiza como una expresión.
-    }
-}
 
-
-    // Método para analizar un cuerpo que puede contener múltiples expresiones
-    private NodoExpresion ParsearCuerpo()
+    private NodoExpresion ParsearBloque()
     {
-        NodoExpresion nodoCuerpo = new NodoExpresion("cuerpo");
+        Sentencias sentenciasBloque = new Sentencias();
+
         while (true)
         {
-            string tokenActual = ObtenerTokenActual();
-            if (tokenActual == "}")
-            {
-                break; // Salir si se llega al final del cuerpo
-            }
-            else
-            {
-                // Analiza cada sentencia en el cuerpo
-                NodoExpresion sentencia = ParsearAsignacion(); // Cambiar para parsear asignaciones
-                nodoCuerpo.Derecha = sentencia; // Asignar la sentencia al nodo cuerpo
-            }
-        }
-        return nodoCuerpo; // Retornar nodo del cuerpo
-    }
+            Token siguienteToken = SiguienteToken();
+            if (siguienteToken != null && siguienteToken.Value == "}")
+                break;
 
-    // Método para analizar una asignación
-    private NodoExpresion ParsearAsignacion()
-    {
-        string variable = ObtenerTokenActual(); // Obtiene la variable
-        if (variable == null || variable.Contains("=") || variable == "{" || variable == "}") // Verifica si el token actual es una asignación
-        {
-            throw new Exception("Se esperaba una variable");
+            Retroceder();
+            NodoExpresion sentencia = ParsearSentencia();
+            sentenciasBloque.AgregarSentencia(sentencia);
         }
-        Avanzar(); // Consume la variable
 
-        if (ObtenerTokenActual() != "=") // Verifica que el siguiente token sea '='
+        return new NodoExpresion("bloque")
         {
-            throw new Exception("Se esperaba '=' en la asignación");
-        }
-        Avanzar(); // Consume '='
-
-        var valor = ParsearExpresion(); // Analiza el valor a la derecha de la asignación
-        return new NodoExpresion("asignado")
-        {
-            Izquierda = new NodoExpresion(variable), // Nodo izquierdo para la variable
-            Derecha = valor // Nodo derecho para el valor
+            Sentencias = sentenciasBloque.ListaSentencias
         };
     }
 
-    // Método para analizar una expresión que puede contener comparaciones
+    private NodoExpresion ParsearAsignacion(Token tokenIdentificador)
+    {
+        Token siguienteToken = SiguienteToken();
+
+        // Si el token siguiente es '=', es una asignación
+        if (siguienteToken.Value == "=")
+        {
+            NodoExpresion nodoIdentificador = new NodoExpresion(tokenIdentificador.Value);
+            NodoExpresion expresion = ParsearExpresion();
+            VerificarTokenEsperado(";"); // Terminar con ';'
+            return new NodoExpresion("=")
+            {
+                Izquierda = nodoIdentificador,
+                Derecha = expresion
+            };
+        }
+
+        // Si no es una asignación, retrocedemos y procesamos como una expresión regular
+        Retroceder();
+        return ParsearExpresion();
+    }
+
     private NodoExpresion ParsearExpresion()
     {
-        NodoExpresion izquierda = ParsearTermino(); // Analiza el primer término de la expresión
-        
+        NodoExpresion izquierda = ParsearTermino();
+
         while (true)
         {
-            string tokenActual = ObtenerTokenActual(); // Obtiene el token actual.
-            if (tokenActual == "-" || tokenActual == "+" || tokenActual == ">" || tokenActual == "<" || tokenActual == "==" || tokenActual == "!=") // Verifica si el token es un operador de comparación.
+            Token siguienteToken = SiguienteToken();
+            if (siguienteToken == null || !EsOperador(siguienteToken.Value))
             {
-                Avanzar(); // Avanza para consumir el operador.
-                NodoExpresion derecha = ParsearTermino(); // Analiza el siguiente término a la derecha del operador.
-                NodoExpresion nuevoNodo = new NodoExpresion(tokenActual)
-                {
-                    Izquierda = izquierda, // Asigna el nodo izquierdo.
-                    Derecha = derecha // Asigna el nodo derecho.
-                };
-                izquierda = nuevoNodo; // Actualiza el nodo izquierdo para el siguiente ciclo.
+                Retroceder();
+                break;
             }
-            else
+
+            NodoExpresion derecha = ParsearTermino();
+            izquierda = new NodoExpresion(siguienteToken.Value)
             {
-                break; // Si no hay más operadores, se rompe el bucle.
-            }
+                Izquierda = izquierda,
+                Derecha = derecha
+            };
         }
-        return izquierda; // Devuelve el nodo raíz de la expresión analizada.
+
+        return izquierda;
     }
 
-    // Método para analizar un término que puede contener multiplicaciones y divisiones.
     private NodoExpresion ParsearTermino()
     {
-        NodoExpresion izquierda = ParsearFactor(); // Analiza el primer factor del término
-        
-        while (true)
+        Token siguienteToken = SiguienteToken();
+
+        if (siguienteToken.Type == TokenType.Number || siguienteToken.Type == TokenType.Identifier)
         {
-            string tokenActual = ObtenerTokenActual(); // Obtiene el token actual.
-            if (tokenActual == "*" || tokenActual == "/") // Verifica si el token es un operador de multiplicación o división.
-            {
-                Avanzar(); // Avanza para consumir el operador.
-                NodoExpresion derecha = ParsearFactor(); // Analiza el siguiente factor a la derecha del operador.
-                NodoExpresion nuevoNodo = new NodoExpresion(tokenActual)
-                {
-                    Izquierda = izquierda, // Asigna el nodo izquierdo.
-                    Derecha = derecha // Asigna el nodo derecho.
-                };
-                izquierda = nuevoNodo; // Actualiza el nodo izquierdo para el siguiente ciclo.
-            }
-            else
-            {
-                break; // Si no hay más operadores, se rompe el bucle.
-            }
+            return new NodoExpresion(siguienteToken.Value);
         }
-        return izquierda; // Devuelve el nodo raíz del término analizado.
+
+        if (siguienteToken.Value == "(")
+        {
+            NodoExpresion expresion = ParsearExpresion();
+            VerificarTokenEsperado(")");
+            return expresion;
+        }
+
+        throw new Exception($"Error: Se esperaba un número, un identificador o una expresión entre paréntesis, pero se encontró '{siguienteToken.Value}'.");
     }
 
-    // Método para analizar un factor, que puede ser un número o una expresión entre paréntesis.
-    private NodoExpresion ParsearFactor()
+    private void VerificarTokenEsperado(string valorEsperado)
     {
-        string tokenActual = ObtenerTokenActual(); // Obtiene el token actual.
-        if (tokenActual == "(") // Verifica si el token es un paréntesis de apertura.
+        Token tokenActual = SiguienteToken();
+        if (tokenActual == null || tokenActual.Value != valorEsperado)
         {
-            Avanzar(); // Consume el '('.
-            NodoExpresion nodo = ParsearExpresion(); // Llama recursivamente a ParsearExpresion para analizar la expresión dentro de los paréntesis.
-            Avanzar(); // Consume el ')'.
-            return nodo; // Devuelve el nodo analizado dentro de los paréntesis.
-        }
-        else
-        {
-            Avanzar(); // Consume el token actual.
-            return new NodoExpresion(tokenActual); // Crea un nuevo nodo para el token (número u operador).
+            throw new Exception($"Error de sintaxis: Se esperaba '{valorEsperado}' pero se encontró '{tokenActual?.Value}'");
         }
     }
 }
