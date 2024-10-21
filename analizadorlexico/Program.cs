@@ -64,31 +64,67 @@ class Program
     }
 
     static void ImprimirArbol(NodoExpresion nodo, int nivel)
+{
+    if (nodo == null)
+        return;
+
+    // Imprimir el valor del nodo
+    Console.WriteLine(new string(' ', nivel * 4) + nodo.Valor);
+
+    // Conectar nodos hijos si existen
+    if (nodo.Izquierda != null || nodo.Derecha != null)
     {
-        if (nodo == null)
-            return;
+        // Espacio para la línea de conexión
+        Console.Write(new string(' ', nivel * 4));
 
-        // Indentación para mostrar el nivel de profundidad
-        Console.WriteLine(new string(' ', nivel * 2) + nodo.Valor);
-
-        // Recursión para los nodos hijos (Izquierda y Derecha)
+        // Conectar el nodo izquierdo
         if (nodo.Izquierda != null)
         {
-            ImprimirArbol(nodo.Izquierda, nivel + 1);
+            Console.Write("|");
+        }
+        else
+        {
+            Console.Write(" ");
         }
 
+        // Imprimir la conexión del nodo derecho
         if (nodo.Derecha != null)
         {
-            ImprimirArbol(nodo.Derecha, nivel + 1);
+            Console.WriteLine(" \\");
         }
-
-        // Si hay sentencias, imprimirlas
-        if (nodo.Sentencias != null)
+        else
         {
-            foreach (var sentencia in nodo.Sentencias)
-            {
-                ImprimirArbol(sentencia, nivel + 1);
-            }
+            Console.WriteLine("  ");
         }
     }
+
+    // Imprimir el hijo izquierdo
+    if (nodo.Izquierda != null)
+    {
+        ImprimirArbol(nodo.Izquierda, nivel + 1);
+    }
+
+    // Imprimir el hijo derecho
+    if (nodo.Derecha != null)
+    {
+        Console.Write(new string(' ', nivel * 4 + 1)); // Alinear el hijo derecho
+        ImprimirArbol(nodo.Derecha, nivel + 1);
+    }
+
+    // Si hay sentencias, imprimirlas también
+    if (nodo.Sentencias != null)
+    {
+        foreach (var sentencia in nodo.Sentencias)
+        {
+            ImprimirArbol(sentencia, nivel + 1);
+        }
+    }
+}
+
+// Función de uso para la impresión
+static void ImprimirArbolEstructurado(NodoExpresion nodo)
+{
+    ImprimirArbol(nodo, 0);
+}
+
 }
