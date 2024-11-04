@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
-
+// Clase que representa un nodo en un árbol de expresiones
 public class NodoExpresion
 {
     public string Valor { get; set; }
+    // Propiedades que representan los nodos hijos izquierdo y derecho
     public NodoExpresion Izquierda { get; set; }
     public NodoExpresion Derecha { get; set; }
     public List<NodoExpresion> Sentencias { get; set; } = new List<NodoExpresion>();
@@ -13,27 +14,7 @@ public class NodoExpresion
         Valor = valor;
     }
 
-    public void Imprimir(string prefijo = "", bool esIzquierda = true)
-    {
-        Console.WriteLine(prefijo + (esIzquierda ? "├── " : "└── ") + Valor);
-
-        if (Izquierda != null)
-        {
-            Izquierda.Imprimir(prefijo + (esIzquierda ? "│   " : "    "), true);
-        }
-
-        if (Derecha != null)
-        {
-            Derecha.Imprimir(prefijo + (esIzquierda ? "│   " : "    "), false);
-        }
-
-        foreach (var sentencia in Sentencias)
-        {
-            sentencia.Imprimir(prefijo + "    ", false);
-        }
-    }
 }
-
 public class Sentencias
 {
     public List<NodoExpresion> ListaSentencias { get; private set; } = new List<NodoExpresion>();
