@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("analizadorlexico")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c067bf7d068c00febb09a6634c149423d9ab68c0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5c2df887bfc706a27328186f22dec7ff68559ec2")]
 [assembly: System.Reflection.AssemblyProductAttribute("analizadorlexico")]
 [assembly: System.Reflection.AssemblyTitleAttribute("analizadorlexico")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

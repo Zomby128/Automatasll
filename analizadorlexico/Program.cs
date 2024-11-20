@@ -22,6 +22,7 @@ class Program
         Console.WriteLine("1. Mostrar tabla de tokens");
         Console.WriteLine("2. Mostrar árbol sintáctico completo");
         Console.WriteLine("3. Mostrar árbol de sintaxis abstracta (AST)");
+        Console.WriteLine("4 Mostrar tabla de cuadruplos");
         string opcion = Console.ReadLine();
 
         switch (opcion)
@@ -37,9 +38,12 @@ class Program
             case "3":
                 GenerarAST(tokens);
                 break;
-
+            
+            case "4":
+                GenerarCuadruplos(tokens);
+                break;
             default:
-                Console.WriteLine("Opción inválida. Seleccione 1, 2 o 3.");
+                Console.WriteLine("Opción inválida. Seleccione 1, 2, 3 o 4.");
                 break;
         }
     }
@@ -136,4 +140,20 @@ class Program
         }
         
     }
+    static void GenerarCuadruplos(List<Token> tokens)
+{
+    Parser parser = new Parser(tokens);
+    QuadrupleGenerator generator = new QuadrupleGenerator();
+
+    try
+    {
+        NodoExpresion arbol = parser.ParsearSentencia();
+        List<Quadruple> cuadruplos = generator.GenerarCuadruplos(arbol);
+        generator.MostrarCuadruplos();
+    }
+    catch (Exception e)
+    {
+        Console.WriteLine($"Error al generar cuádruplos: {e.Message}");
+    }
+}
 }
