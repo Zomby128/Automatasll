@@ -4,7 +4,6 @@ using System.Collections.Generic;
 public class NodoExpresion
 {
     public string Valor { get; set; }
-    // Propiedades que representan los nodos hijos izquierdo y derecho
     public NodoExpresion Izquierda { get; set; }
     public NodoExpresion Derecha { get; set; }
     public List<NodoExpresion> Sentencias { get; set; } = new List<NodoExpresion>();
@@ -13,8 +12,8 @@ public class NodoExpresion
     {
         Valor = valor;
     }
-
 }
+
 public class Sentencias
 {
     public List<NodoExpresion> ListaSentencias { get; private set; } = new List<NodoExpresion>();
