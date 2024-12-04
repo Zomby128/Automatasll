@@ -1,10 +1,12 @@
 ﻿//  Nombre: Adolfo Alejandro Granados Cosio
 //  Matricula: 22760037
-//  Trabajo: Analizador Lexico, Analizador Sintactico y Arbol Sintactico en C#
+//  Trabajo: Analizador Lexico, Analizador Sintactico, Arbol Sintactico y Generador de Cuádruplos en C#
 //  Profesor: Luis Armando Cárdenas Florido
 using System;
 using System.Collections.Generic;
 using System.IO;
+// Asegúrate de agregar el namespace del GeneradorCuadruplos
+// using TuEspacioDeNombres;
 
 class Program
 {
@@ -17,12 +19,12 @@ class Program
         Lexer lexer = new Lexer(codigoFuente);
         List<Token> tokens = lexer.GenerarTokens();
 
-        // Preguntar al usuario si desea ver la tabla de tokens, el árbol sintáctico o el AST
+        // Preguntar al usuario si desea ver la tabla de tokens, el árbol sintáctico, el AST o los cuádruplos
         Console.WriteLine("Seleccione una opción:");
         Console.WriteLine("1. Mostrar tabla de tokens");
         Console.WriteLine("2. Mostrar árbol sintáctico completo");
         Console.WriteLine("3. Mostrar árbol de sintaxis abstracta (AST)");
-        Console.WriteLine("4 Mostrar tabla de cuadruplos");
+        Console.WriteLine("4. Mostrar tabla de cuádruplos");
         string opcion = Console.ReadLine();
 
         switch (opcion)
@@ -38,10 +40,11 @@ class Program
             case "3":
                 GenerarAST(tokens);
                 break;
-            
+
             case "4":
                 GenerarCuadruplos(tokens);
                 break;
+
             default:
                 Console.WriteLine("Opción inválida. Seleccione 1, 2, 3 o 4.");
                 break;
@@ -86,6 +89,35 @@ class Program
         catch (Exception e)
         {
             Console.WriteLine($"Error al generar AST: {e.Message}");
+        }
+    }
+
+    static void GenerarCuadruplos(List<Token> tokens)
+    {
+        Parser parser = new Parser(tokens);
+        GeneradorCuadruplos generator = new GeneradorCuadruplos(); // Instanciar el generador de cuádruplos
+
+        try
+        {
+            // Parsear el código para obtener el árbol sintáctico
+            NodoExpresion arbol = parser.ParsearSentencia();
+            if (arbol == null)
+            {
+                Console.WriteLine("Error: No se pudo generar el árbol sintáctico.");
+                return;
+            }
+
+            // Generar los cuádruplos desde el árbol sintáctico
+            generator.GenerarCuadruplos(arbol);
+
+            // Mostrar los cuádruplos en una tabla
+            Console.WriteLine("\nCuádruplos Generados:");
+            generator.MostrarCuadruplos();
+        }
+        catch (Exception e)
+        {
+            // Capturar y mostrar errores durante la generación de cuádruplos
+            Console.WriteLine($"Error al generar cuádruplos: {e.Message}");
         }
     }
 
@@ -138,22 +170,5 @@ class Program
         {
             ImprimirAST(hijos[i], prefijo + (esUltimo ? "    " : "│   "), i == hijos.Count - 1);
         }
-        
     }
-    static void GenerarCuadruplos(List<Token> tokens)
-{
-    Parser parser = new Parser(tokens);
-    QuadrupleGenerator generator = new QuadrupleGenerator();
-
-    try
-    {
-        NodoExpresion arbol = parser.ParsearSentencia();
-        List<Quadruple> cuadruplos = generator.GenerarCuadruplos(arbol);
-        generator.MostrarCuadruplos();
-    }
-    catch (Exception e)
-    {
-        Console.WriteLine($"Error al generar cuádruplos: {e.Message}");
-    }
-}
 }

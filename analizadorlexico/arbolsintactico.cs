@@ -93,36 +93,36 @@ public class Parser
     }
 
     private NodoExpresion ParsearIfStatement()
+{
+    VerificarTokenEsperado("(");
+    NodoExpresion condicion = ParsearExpresion(); // Parsear la condición
+    VerificarTokenEsperado(")");
+
+    VerificarTokenEsperado("{");
+    NodoExpresion bloqueIf = new NodoExpresion("if")
     {
-        VerificarTokenEsperado("(");
-        NodoExpresion condicion = ParsearExpresion();
-        VerificarTokenEsperado(")");
+        Izquierda = condicion, // Condición para 'if'
+        Derecha = ParsearBloque() // Bloque de código
+    };
 
+    Token tokenSiguiente = SiguienteToken();
+    if (tokenSiguiente != null && tokenSiguiente.Value == "else")
+    {
         VerificarTokenEsperado("{");
-
-        NodoExpresion bloqueIf = new NodoExpresion("if")
+        NodoExpresion bloqueElse = new NodoExpresion("else")
         {
-            Izquierda = condicion,
             Derecha = ParsearBloque()
         };
-
-        Token tokenSiguiente = SiguienteToken();
-        if (tokenSiguiente != null && tokenSiguiente.Value == "else")
-        {
-            VerificarTokenEsperado("{");
-            NodoExpresion bloqueElse = new NodoExpresion("else")
-            {
-                Derecha = ParsearBloque()
-            };
-            bloqueIf.Sentencias.Add(bloqueElse);
-        }
-        else
-        {
-            Retroceder();
-        }
-
-        return bloqueIf;
+        bloqueIf.Sentencias.Add(bloqueElse);
     }
+    else
+    {
+        Retroceder();
+    }
+
+    return bloqueIf;
+}
+
 
     private NodoExpresion ParsearWhileStatement()
     {
@@ -243,18 +243,30 @@ private NodoExpresion ParsearExpresionCompleta()
             break;
         }
 
-        if (!EsOperador(siguienteToken.Value)) // Manejar solo operadores válidos
+        if (siguienteToken.Value == "=") // Asignación
         {
-            throw new Exception($"Error: Se esperaba un operador, pero se encontró '{siguienteToken.Value}'.");
+            NodoExpresion derecha = ParsearExpresion(); // Parsear la parte derecha de la asignación
+            izquierda = new NodoExpresion("=") 
+            {
+                Izquierda = izquierda,
+                Derecha = derecha
+            };
         }
-
-        // Parsear el operando derecho
-        NodoExpresion derecha = ParsearTermino();
-        izquierda = new NodoExpresion(siguienteToken.Value)
+        else if (EsOperador(siguienteToken.Value)) // Si es un operador
         {
-            Izquierda = izquierda,
-            Derecha = derecha
-        };
+            NodoExpresion derecha = ParsearTermino();
+            izquierda = new NodoExpresion(siguienteToken.Value)
+            {
+                Izquierda = izquierda,
+                Derecha = derecha
+            };
+        }
+        else
+        {
+            // Si no es un operador o asignación, lo retrocedemos
+            Retroceder();
+            break;
+        }
     }
 
     return izquierda;
@@ -284,40 +296,40 @@ private NodoExpresion ParsearExpresionCompleta()
     }
 
     private NodoExpresion ParsearAsignacion(Token tokenIdentificador)
+{
+    Token siguienteToken = SiguienteToken();
+
+    // Si el token siguiente es '=', es una asignación
+    if (siguienteToken.Value == "=")
     {
-        Token siguienteToken = SiguienteToken();
-
-        // Si el token siguiente es '=', es una asignación
-        if (siguienteToken.Value == "=")
+        NodoExpresion nodoIdentificador = new NodoExpresion(tokenIdentificador.Value);
+        NodoExpresion expresion = ParsearExpresion();
+        VerificarTokenEsperado(";"); // Terminar con ';'
+        
+        return new NodoExpresion("=")
         {
-            NodoExpresion nodoIdentificador = new NodoExpresion(tokenIdentificador.Value);
-            NodoExpresion expresion = ParsearExpresion();
-            VerificarTokenEsperado(";"); // Terminar con ';'
-            return new NodoExpresion("=")
-            {
-                Izquierda = nodoIdentificador,
-                Derecha = expresion
-            };
-        }
-
-        // Si no es una asignación, retrocedemos y procesamos como una expresión regular
-        Retroceder();
-        return ParsearExpresion();
+            Izquierda = nodoIdentificador,
+            Derecha = expresion
+        };
     }
 
-    private NodoExpresion ParsearExpresion()
+    // Si no es una asignación, retrocedemos y procesamos como una expresión regular
+    Retroceder();
+    return ParsearExpresion();
+}
+
+
+private NodoExpresion ParsearExpresion()
+{
+    NodoExpresion izquierda = ParsearTermino();
+
+    while (true)
     {
-        NodoExpresion izquierda = ParsearTermino();
-
-        while (true)
+        Token siguienteToken = SiguienteToken();
+        
+        // Si es un operador o un signo de asignación, procesamos como tal
+        if (siguienteToken != null && (EsOperador(siguienteToken.Value) || siguienteToken.Value == "="))
         {
-            Token siguienteToken = SiguienteToken();
-            if (siguienteToken == null || !EsOperador(siguienteToken.Value))
-            {
-                Retroceder();
-                break;
-            }
-
             NodoExpresion derecha = ParsearTermino();
             izquierda = new NodoExpresion(siguienteToken.Value)
             {
@@ -325,9 +337,22 @@ private NodoExpresion ParsearExpresionCompleta()
                 Derecha = derecha
             };
         }
-
-        return izquierda;
+        else if (siguienteToken != null && siguienteToken.Value == ";")
+        {
+            // Terminar expresión cuando se encuentra un ';'
+            Retroceder();
+            break;
+        }
+        else
+        {
+            // Si no es operador o ';', retrocedemos y terminamos la expresión
+            Retroceder();
+            break;
+        }
     }
+    return izquierda;
+}
+
 
 private NodoExpresion ParsearTermino()
 {
