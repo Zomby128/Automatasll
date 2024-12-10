@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 
-
 public class Parser
 {
     private List<Token> tokens;
@@ -13,118 +12,45 @@ public class Parser
         this.posicion = 0;
     }
 
+    // Precedencia de operadores
     private int Precedencia(string operador)
     {
-        switch (operador)
+        return operador switch
         {
-            case "^": return 4;
-            case "*": case "/": case "%": return 3;
-            case "+": case "-": return 2;
-            case "<": case ">": case "<=": case ">=": case "==": case "!=": return 1;
-            default: return 0;
-        }
+            "^" => 4,
+            "*" or "/" or "%" => 3,
+            "+" or "-" => 2,
+            "<" or ">" or "<=" or ">=" or "==" or "!=" => 1,
+            _ => 0
+        };
     }
 
-    private bool EsOperador(string valor)
-    {
-        return Precedencia(valor) > 0;
-    }
+    private bool EsOperador(string valor) => Precedencia(valor) > 0;
 
-    private Token SiguienteToken()
-    {
-        if (posicion < tokens.Count)
-        {
-            return tokens[posicion++];
-        }
-        return null;
-    }
+    private Token SiguienteToken() => posicion < tokens.Count ? tokens[posicion++] : null;
 
     private void Retroceder()
     {
-        if (posicion > 0)
-            posicion--;
+        if (posicion > 0) posicion--;
     }
 
+    // Método principal para parsear sentencias
     public NodoExpresion ParsearSentencia()
     {
         Token tokenActual = SiguienteToken();
+        if (tokenActual == null) throw new Exception("Error: Código fuente vacío.");
 
-        // Sentencia 'return'
-        if (tokenActual.Type == TokenType.Keyword && tokenActual.Value == "return")
+        return tokenActual.Type switch
         {
-            return ParsearReturnStatement();
-        }
-
-        // Sentencia 'if'
-        if (tokenActual.Type == TokenType.Keyword && tokenActual.Value == "if")
-        {
-            return ParsearIfStatement();
-        }
-
-        // Sentencia 'while'
-        if (tokenActual.Type == TokenType.Keyword && tokenActual.Value == "while")
-        {
-            return ParsearWhileStatement();
-        }
-
-        // Sentencia 'for'
-        if (tokenActual.Type == TokenType.Keyword && tokenActual.Value == "for")
-        {
-            return ParsearForStatement();
-        }
-
-        // Asignación
-        if (tokenActual.Type == TokenType.Identifier)
-        {
-            return ParsearAsignacion(tokenActual);
-        }
-
-        throw new Exception($"Error: Sentencia inesperada '{tokenActual.Value}'");
-    }
-
-    // Método para procesar una sentencia 'return'
-    private NodoExpresion ParsearReturnStatement()
-    {
-        NodoExpresion expresion = ParsearExpresion();
-        VerificarTokenEsperado(";"); // Cada 'return' debe terminar con un ';'
-        return new NodoExpresion("return")
-        {
-            Derecha = expresion
+            TokenType.Keyword when tokenActual.Value == "while" => ParsearWhileStatement(),
+            TokenType.Keyword when tokenActual.Value == "for" => ParsearForStatement(),
+            TokenType.Keyword when tokenActual.Value == "if" => ParsearIfStatement(),
+            TokenType.Identifier => ParsearAsignacion(tokenActual),
+            _ => LanzarError($"Sentencia inesperada '{tokenActual.Value}'", tokenActual)
         };
     }
 
-    private NodoExpresion ParsearIfStatement()
-{
-    VerificarTokenEsperado("(");
-    NodoExpresion condicion = ParsearExpresion(); // Parsear la condición
-    VerificarTokenEsperado(")");
-
-    VerificarTokenEsperado("{");
-    NodoExpresion bloqueIf = new NodoExpresion("if")
-    {
-        Izquierda = condicion, // Condición para 'if'
-        Derecha = ParsearBloque() // Bloque de código
-    };
-
-    Token tokenSiguiente = SiguienteToken();
-    if (tokenSiguiente != null && tokenSiguiente.Value == "else")
-    {
-        VerificarTokenEsperado("{");
-        NodoExpresion bloqueElse = new NodoExpresion("else")
-        {
-            Derecha = ParsearBloque()
-        };
-        bloqueIf.Sentencias.Add(bloqueElse);
-    }
-    else
-    {
-        Retroceder();
-    }
-
-    return bloqueIf;
-}
-
-
+    // Parseo de sentencias 'while'
     private NodoExpresion ParsearWhileStatement()
     {
         VerificarTokenEsperado("(");
@@ -140,197 +66,125 @@ public class Parser
 
         return bloqueWhile;
     }
-private NodoExpresion ParsearForStatement()
-{
-    // Verifica el paréntesis de apertura '('
-    VerificarTokenEsperado("(");
 
-    // 1. Parsear la inicialización (puede ser una declaración o asignación)
-    NodoExpresion inicializacion = ParsearInicializacionFor();
-    VerificarTokenEsperado(";"); // Verificar el punto y coma que separa la inicialización de la condición
-
-    // 2. Parsear la condición del ciclo for
-    NodoExpresion condicion = ParsearExpresion(); // Parsear la condición como una expresión
-    VerificarTokenEsperado(";"); // Verificar el punto y coma que separa la condición del incremento
-
-    // 3. Parsear el incremento del ciclo for
-    NodoExpresion incremento = ParsearExpresion(); // Parsear el incremento
-    VerificarTokenEsperado(")"); // Verificar el paréntesis de cierre ')'
-
-    // 4. Verificar que se abra el bloque de código '{'
-    VerificarTokenEsperado("{");
-
-    // 5. Parsear el bloque de código dentro del ciclo for
-    NodoExpresion bloqueFor = ParsearBloque(); // Parsear el bloque de código
-
-    // Crear el nodo del ciclo for con la estructura correcta
-    NodoExpresion nodoFor = new NodoExpresion("for")
+    // Parseo de sentencias 'for'
+    private NodoExpresion ParsearForStatement()
     {
-        Izquierda = condicion, // La condición del ciclo va como hijo izquierdo
-        Derecha = bloqueFor // El bloque de código va como hijo derecho
-    };
+        VerificarTokenEsperado("(");
 
-    // Añadir la inicialización como la primera sentencia del ciclo
-    nodoFor.Sentencias.Insert(0, inicializacion);
-
-    // Añadir el incremento como la última sentencia del ciclo
-    nodoFor.Sentencias.Add(incremento);
-
-    return nodoFor;
-}
-
-// Método especializado para la inicialización del ciclo 'for'
-private NodoExpresion ParsearInicializacionFor()
-{
-    Token tokenActual = SiguienteToken();
-
-    // Caso de declaración (por ejemplo: int i = 0)
-    if (tokenActual.Value == "int")
-    {
-        NodoExpresion declaracion = new NodoExpresion("int");
-        Token identificador = SiguienteToken();
-        if (identificador.Type != TokenType.Identifier)
+        NodoExpresion inicializacion = null;
+        Token tokenInicial = SiguienteToken();
+        if (tokenInicial.Type == TokenType.Identifier)
         {
-            throw new Exception("Error de sintaxis: Se esperaba un identificador después de 'int'.");
-        }
-        declaracion.Izquierda = new NodoExpresion(identificador.Value);
-
-        // Verificar si hay una asignación (por ejemplo: i = 0)
-        Token siguiente = SiguienteToken();
-        if (siguiente.Value == "=")
-        {
-            declaracion.Derecha = ParsearExpresion(); // Parsear la expresión después del '='
-        }
-
-        return declaracion;
-    }
-
-    // Caso de asignación sin declaración (por ejemplo: i = 0)
-    if (tokenActual.Type == TokenType.Identifier)
-    {
-        Token siguiente = SiguienteToken();
-        if (siguiente.Value == "=")
-        {
-            NodoExpresion asignacion = new NodoExpresion("=")
-            {
-                Izquierda = new NodoExpresion(tokenActual.Value),
-                Derecha = ParsearExpresion() // Parsear el valor de la asignación
-            };
-            return asignacion;
-        }
-        
-        // Si no es una asignación, retroceder para manejarlo como expresión
-        Retroceder();
-    }
-
-    // Caso de expresión simple
-    Retroceder(); // Retrocedemos para procesarlo como una expresión estándar
-    return ParsearExpresion();
-}
-
-// Método para parsear expresiones completas hasta encontrar ';'
-private NodoExpresion ParsearExpresionCompleta()
-{
-    NodoExpresion izquierda = ParsearTermino();
-
-    while (true)
-    {
-        Token siguienteToken = SiguienteToken();
-
-        // Detener cuando se encuentra ';', ya que es el fin de la expresión
-        if (siguienteToken == null || siguienteToken.Value == ";")
-        {
-            Retroceder(); // Retroceder para que el ';' se procese en otro lugar
-            break;
-        }
-
-        if (siguienteToken.Value == "=") // Asignación
-        {
-            NodoExpresion derecha = ParsearExpresion(); // Parsear la parte derecha de la asignación
-            izquierda = new NodoExpresion("=") 
-            {
-                Izquierda = izquierda,
-                Derecha = derecha
-            };
-        }
-        else if (EsOperador(siguienteToken.Value)) // Si es un operador
-        {
-            NodoExpresion derecha = ParsearTermino();
-            izquierda = new NodoExpresion(siguienteToken.Value)
-            {
-                Izquierda = izquierda,
-                Derecha = derecha
-            };
-        }
-        else
-        {
-            // Si no es un operador o asignación, lo retrocedemos
             Retroceder();
-            break;
+            inicializacion = ParsearAsignacion(SiguienteToken());
         }
-    }
+        VerificarTokenEsperado(";");
 
-    return izquierda;
-}
+        NodoExpresion condicion = ParsearExpresion();
+        VerificarTokenEsperado(";");
 
-
-
-    private NodoExpresion ParsearBloque()
-    {
-        Sentencias sentenciasBloque = new Sentencias();
-
-        while (true)
+        NodoExpresion incremento = null;
+        Token tokenIncremento = SiguienteToken();
+        if (tokenIncremento.Type == TokenType.Identifier)
         {
-            Token siguienteToken = SiguienteToken();
-            if (siguienteToken != null && siguienteToken.Value == "}")
-                break;
-
             Retroceder();
-            NodoExpresion sentencia = ParsearSentencia();
-            sentenciasBloque.AgregarSentencia(sentencia);
+            incremento = ParsearExpresion();
         }
+        VerificarTokenEsperado(")");
 
-        return new NodoExpresion("bloque")
+        VerificarTokenEsperado("{");
+        NodoExpresion bloqueFor = ParsearBloque();
+
+        return new NodoExpresion("for")
         {
-            Sentencias = sentenciasBloque.ListaSentencias
+            Sentencias = new List<NodoExpresion> { inicializacion, incremento },
+            Izquierda = condicion,
+            Derecha = bloqueFor
         };
     }
 
-    private NodoExpresion ParsearAsignacion(Token tokenIdentificador)
-{
-    Token siguienteToken = SiguienteToken();
-
-    // Si el token siguiente es '=', es una asignación
-    if (siguienteToken.Value == "=")
+    // Parseo de sentencias 'if'
+    private NodoExpresion ParsearIfStatement()
     {
-        NodoExpresion nodoIdentificador = new NodoExpresion(tokenIdentificador.Value);
+        VerificarTokenEsperado("(");
+        NodoExpresion condicion = ParsearExpresion();
+        VerificarTokenEsperado(")");
+        VerificarTokenEsperado("{");
+
+        NodoExpresion bloqueIf = new NodoExpresion("if")
+        {
+            Izquierda = condicion,
+            Derecha = ParsearBloque()
+        };
+
+        Token tokenSiguiente = SiguienteToken();
+        if (tokenSiguiente != null && tokenSiguiente.Value == "else")
+        {
+            VerificarTokenEsperado("{");
+            NodoExpresion bloqueElse = new NodoExpresion("else")
+            {
+                Derecha = ParsearBloque()
+            };
+            bloqueIf.Sentencias ??= new List<NodoExpresion>();
+            bloqueIf.Sentencias.Add(bloqueElse);
+        }
+        else
+        {
+            Retroceder();
+        }
+
+        return bloqueIf;
+    }
+
+    // Parseo de asignación
+    private NodoExpresion ParsearAsignacion(Token tokenIdentificador)
+    {
+        Token siguienteToken = SiguienteToken();
+        if (siguienteToken?.Value != "=")
+        {
+            LanzarError($"Se esperaba '=' después de '{tokenIdentificador.Value}'", siguienteToken);
+        }
+
         NodoExpresion expresion = ParsearExpresion();
-        VerificarTokenEsperado(";"); // Terminar con ';'
-        
+        VerificarTokenEsperado(";");
         return new NodoExpresion("=")
         {
-            Izquierda = nodoIdentificador,
+            Izquierda = new NodoExpresion(tokenIdentificador.Value),
             Derecha = expresion
         };
     }
 
-    // Si no es una asignación, retrocedemos y procesamos como una expresión regular
-    Retroceder();
-    return ParsearExpresion();
-}
-
-
-private NodoExpresion ParsearExpresion()
-{
-    NodoExpresion izquierda = ParsearTermino();
-
-    while (true)
+    // Parseo de bloques de código
+    private NodoExpresion ParsearBloque()
     {
-        Token siguienteToken = SiguienteToken();
-        
-        // Si es un operador o un signo de asignación, procesamos como tal
-        if (siguienteToken != null && (EsOperador(siguienteToken.Value) || siguienteToken.Value == "="))
+        List<NodoExpresion> sentencias = new List<NodoExpresion>();
+        while (true)
         {
+            Token tokenActual = SiguienteToken();
+            if (tokenActual != null && tokenActual.Type == TokenType.BraceClose)
+            {
+                break;
+            }
+            Retroceder();
+            sentencias.Add(ParsearSentencia());
+        }
+
+        return new NodoExpresion("bloque") { Sentencias = sentencias };
+    }
+
+    // Parseo de expresiones
+    private NodoExpresion ParsearExpresion()
+    {
+        NodoExpresion izquierda = ParsearTermino();
+        while (true)
+        {
+            Token siguienteToken = SiguienteToken();
+            if (siguienteToken == null || !EsOperador(siguienteToken.Value))
+            {
+                Retroceder();
+                break;
+            }
             NodoExpresion derecha = ParsearTermino();
             izquierda = new NodoExpresion(siguienteToken.Value)
             {
@@ -338,65 +192,45 @@ private NodoExpresion ParsearExpresion()
                 Derecha = derecha
             };
         }
-        else if (siguienteToken != null && siguienteToken.Value == ";")
-        {
-            // Terminar expresión cuando se encuentra un ';'
-            Retroceder();
-            break;
-        }
-        else
-        {
-            // Si no es operador o ';', retrocedemos y terminamos la expresión
-            Retroceder();
-            break;
-        }
+        return izquierda;
     }
-    return izquierda;
-}
 
-
-private NodoExpresion ParsearTermino()
-{
-    Token tokenActual = SiguienteToken();
-
-    // Caso de un número o un identificador
-    if (tokenActual.Type == TokenType.Number || tokenActual.Type == TokenType.Identifier)
+    // Parseo de términos
+    private NodoExpresion ParsearTermino()
     {
-        NodoExpresion nodo = new NodoExpresion(tokenActual.Value);
+        Token tokenActual = SiguienteToken();
 
-        // Verificar si el siguiente token es '++' o '--'
-        Token tokenSiguiente = SiguienteToken();
-        if (tokenSiguiente != null && (tokenSiguiente.Value == "++" || tokenSiguiente.Value == "--"))
+        if (tokenActual.Type == TokenType.Number || tokenActual.Type == TokenType.Identifier)
         {
-            // Manejar como un operador unario
-            return new NodoExpresion(tokenSiguiente.Value)
-            {
-                Izquierda = nodo // El operador unario actúa sobre el identificador
-            };
+            return new NodoExpresion(tokenActual.Value);
         }
 
-        // Si no hay '++' o '--', retroceder
-        Retroceder();
-        return nodo;
+        if (tokenActual.Value == "(")
+        {
+            NodoExpresion expresion = ParsearExpresion();
+            VerificarTokenEsperado(")");
+            return expresion;
+        }
+
+        LanzarError("Se esperaba un número o identificador", tokenActual);
+        return null;
     }
 
-    // Caso de una expresión entre paréntesis
-    if (tokenActual.Value == "(")
-    {
-        NodoExpresion expresion = ParsearExpresion();
-        VerificarTokenEsperado(")");
-        return expresion;
-    }
-
-    throw new Exception($"Error: Se esperaba un número, un identificador o una expresión entre paréntesis, pero se encontró '{tokenActual.Value}'.");
-}
-
+    // Verifica y lanza un error si no coincide el token
     private void VerificarTokenEsperado(string valorEsperado)
     {
         Token tokenActual = SiguienteToken();
         if (tokenActual == null || tokenActual.Value != valorEsperado)
         {
-            throw new Exception($"Error de sintaxis: Se esperaba '{valorEsperado}' pero se encontró '{tokenActual?.Value}'");
+            LanzarError($"Se esperaba '{valorEsperado}'", tokenActual);
         }
+    }
+
+    private NodoExpresion LanzarError(string mensaje, Token token)
+    {
+        string ubicacion = token != null
+            ? $"en la línea {token.Linea}, columna {token.Columna}"
+            : "al final del archivo";
+        throw new Exception($"Error de sintaxis: {mensaje} {ubicacion}.");
     }
 }
